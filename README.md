@@ -7,7 +7,8 @@
 - re
 - Beautifulsoup4
 - pprint
-## 运行主要程序：score.py
+## 下载bit_jwc_login.py 及 score.py
+## 命令行运行主要程序：score.py
 ### 通过命令终端实现教务处功能
 #### 命令指令实例：
 - 指令 + 学号 + 密码
