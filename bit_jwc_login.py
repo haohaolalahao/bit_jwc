@@ -5,9 +5,6 @@ import urllib.parse
 import re
 from bs4 import BeautifulSoup
 
-import pprint
-import random
-
 #主要参数
 origin_url = 'http://10.5.2.80'
 host = '10.5.2.80'
@@ -33,6 +30,7 @@ def getGradefromsoup(grade_response):
 
     new_scores=scores[::-1]
     return new_scores
+
 #获取考试信息
 def getExaminformation(exam_response):
     soup = BeautifulSoup(exam_response,'html.parser')
@@ -41,21 +39,13 @@ def getExaminformation(exam_response):
     for inf in infs:
         details = inf.find_all('td')
         exam_inf = [detail.string for detail in details]
-        exam_infs.append(exam_inf)
+        if ''.join(exam_inf[3].split())!='':
+            exam_infs.append(exam_inf)
     for item in exam_infs:
         item.pop(0)
         item.pop(1)
         item.pop(3)
     return exam_infs
-
-#获取课表
-def getSchedule(Schedule_response):
-    soup = BeautifulSoup(Schedule_response,'html.parser')
-    infs = soup.find_all('table')
-    for tr in infs[6].find_all('tr'):
-        for td in tr.find_all('td'):
-            print(td.text,end=' ')
-        print('')
 
     #模拟登录
 def jwclogin(student_number,password,parsers):
@@ -64,8 +54,12 @@ def jwclogin(student_number,password,parsers):
     global userAgent
     #登录初始页面
     #session方法保留cookie
-    s = requests.session()
-    enter_page = s.get(origin_url)
+    try:
+        s = requests.session()
+        enter_page = s.get(origin_url, timeout=5)
+    except:
+        print(u'教务处网页无法打开')
+        return 0
     #检查登录状态
     #print(enter_page.url)
     #print(enter_page.status_code)
@@ -94,13 +88,14 @@ def jwclogin(student_number,password,parsers):
     }
 
     #开始登录
-    main_page = s.post(main_url,data=data_main_url,headers=header_main_url)
-    #检查状态
-    #print(main_page.status_code)
-    #print(len(main_page.text))
+    try:
+        main_page = s.post(main_url,data=data_main_url,headers=header_main_url)#检查状态 print(main_page.status_code) print(len(main_page.text))
+        main_page_soup = BeautifulSoup(main_page.text,'html.parser') #登录主页面
+        student_name = main_page_soup.find(id="xhxm").string #获取学生姓名
+    except:
+        print( u'账号或密码错误,请重新输入')
+        return 0
 
-    main_page_soup = BeautifulSoup(main_page.text,'html.parser') #登录主页面
-    student_name = main_page_soup.find(id="xhxm").string #获取学生姓名
     #获取成绩
     if parsers == '-s':
         grade_first_url = main_url[:-13]+'xscj.aspx?' #成绩页面url
@@ -206,9 +201,13 @@ def jwclogin(student_number,password,parsers):
 
     #一键评教
     if parsers == '-i':
-        href = main_page_soup.find_all('table')[3].find_all('a')
-        pj_url = [i['href'] for i in href]
-        url = main_url[:-13]+pj_url[0]
+        try:
+            href = main_page_soup.find_all('table')[3].find_all('a')
+            pj_url = [i['href'] for i in href]
+            url = main_url[:-13] + pj_url[0]
+        except:
+            print('该学生已评价过!')
+            return 0
         head = {
             'Accept': '*/*',
             'Accept-Encoding': 'gzip, deflate',
@@ -222,9 +221,9 @@ def jwclogin(student_number,password,parsers):
         try:
             res = s.get(url, headers=head)
         except IndexError:
-            return u'该学生已完成评教！'
+             print('该学生已评价过')
+             return 0
         doEvaluate(res.content.decode('gb2312'), pj_url, 0, main_url[:-13], s)
-        return u'评教成功，为保证安全，请登录教务系统查看并提交。'
 
 #获取__VIEWSTATE
 def getViewState(response):
@@ -265,7 +264,7 @@ def doEvaluate(response, pj_url, index, url, s):
         'User-Agent': userAgent
     }
     data={}
-    # data22 = collections.OrderedDict()
+    # data = collections.OrderedDict()
     data['__EVENTTARGET'] = ''
     data['__EVENTARGUMENT'] = ''
     data['__VIEWSTATE'] = __VIEWSTATE
@@ -281,7 +280,7 @@ def doEvaluate(response, pj_url, index, url, s):
     if index < len(pj_url):
         doEvaluate(res, pj_url, index, url,s)
     else:
-        data22['Button2'] = u'提  交'.encode('gb2312')
+        data['Button2'] = u'提  交'.encode('gb2312')
         res = s.post(url + pj_url[0], data=data, headers=head)
         print('该学生已完成评教，为保证安全，请登录教务处查看')
 

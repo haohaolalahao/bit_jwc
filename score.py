@@ -3,14 +3,13 @@
 """命令行教务处
 
 Usage:
-    tickets [-skti] <student_number> <password>
+    tickets [-sei] <student_number> <password>
 
 Options:
     -h,--help   显示帮助菜单
-    -s          成绩
-    -k          考试信息
-    -t          课表
-    -i          评教
+    -s            成绩
+    -e          考试信息
+    -i            评教
 Example:
     getscore_1 -k 1120161174 222222
     getscore_1 -s 1120161174 222222
@@ -18,10 +17,8 @@ Example:
 
 from bit_jwc_login import *
 from prettytable import PrettyTable
-from prettytable import from_html
 from docopt import docopt
 import time
-import pandas as pd
 
 #成绩制表
 def pretty_print_1(scores):
@@ -56,13 +53,16 @@ def main():
     password = arguments['<password>']
     time.clock()
     if arguments['-s'] is True:
-        print('历年成绩:')
+        print('开始查询历年成绩:')
+        time.sleep(0.1)
         pretty_print_1(getGradefromsoup(jwclogin(student_number, password,'-s')))
-    if arguments['-k'] is True:
-        print('考试信息：')
+    if arguments['-e'] is True:
+        print('开始查询考试信息：')
+        time.sleep(0.1)
         pretty_print_2(getExaminformation(jwclogin(student_number,password,'-k')))
     if arguments['-i'] is True:
-        print('开始评教')
+        print('开始评教:')
+        time.sleep(0.1)
         jwclogin(student_number,password,'-i')
 
 if __name__ == '__main__':
